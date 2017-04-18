@@ -1,0 +1,10 @@
+[package]
+name = "sweepers"
+version = "0.1.0"
+authors = ["JiaYe"]
+
+[dependencies]
+rand = "*"
+winapi = "*"
+user32-sys = "*"
+gdi32-sys = "*"

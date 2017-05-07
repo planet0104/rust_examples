@@ -1,0 +1,10 @@
+[package]
+name = "neat-sweepers"
+version = "0.1.0"
+authors = ["plane"]
+
+[dependencies]
+rand = "*"
+winapi = "*"
+user32-sys = "*"
+gdi32-sys = "*"

@@ -78,8 +78,8 @@ pub extern "C" fn receive(from: String) -> String {<br/>
 //定义Android JNI接口<br/>
 #[cfg(target_os="android")]<br/>
 #[allow(non_snake_case)]<br/>
-pub mod android {
-    extern crate jni;
+pub mod android {<br/>
+    extern crate jni;
 
     use super::*;
     use self::jni::JNIEnv;

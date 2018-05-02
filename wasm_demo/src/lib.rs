@@ -1,10 +1,27 @@
-#[macro_use]
-extern crate serde_json;
-extern crate tank;
-mod game;
 use std::cell::RefCell;
 use std::mem;
-use tank::engine::CanvasContext;
+
+#[macro_use]
+extern crate serde_derive;
+extern crate bincode;
+extern crate serde;
+
+use bincode::{serialize, deserialize};
+
+//精灵信息: Vec<id,x,y,res_id>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SData{
+    pub id: u32,
+    pub x: u16,
+    pub y: u16,
+    pub res: u16,
+	pub child: Child
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Child{
+    pub name: String,
+}
 
 //导入的JS帮助函数
 extern "C" {
@@ -80,17 +97,17 @@ pub fn console_log(msg: &str) {
     }
 }
 
-pub fn load_resource(map: serde_json::Value) {
-    let json = serde_json::to_string(&map).unwrap();
-    unsafe {
-        _load_resource(json.as_ptr(), json.len());
-    }
-}
+// pub fn load_resource(map: serde_json::Value) {
+//     let json = serde_json::to_string(&map).unwrap();
+//     unsafe {
+//         _load_resource(json.as_ptr(), json.len());
+//     }
+// }
 
-pub fn send_json_message(json: serde_json::Value) {
-    let json = serde_json::to_string(&json).unwrap();
-    send_message(&json);
-}
+// pub fn send_json_message(json: serde_json::Value) {
+//     let json = serde_json::to_string(&json).unwrap();
+//     send_message(&json);
+// }
 
 pub fn window_inner_width() -> i32 {
     unsafe { _window_inner_width() }
@@ -294,6 +311,24 @@ pub unsafe fn on_message(msg: *mut u8, length: usize) {
 }
 
 #[no_mangle]
+pub unsafe fn on_binary_message(msg: *mut u8, length: usize) {
+    let msg = Vec::from_raw_parts(msg, length, length);
+
+    console_log(&format!("解码之前:{:?}", msg));
+
+    let decoded:Vec<SData> = deserialize(&msg[..]).unwrap();
+
+    console_log(&format!("解码之后: {:?}", decoded));
+    
+    // let msg = String::from_raw_parts(msg, length, length);
+    // JS.with(|e| {
+    //     if let Some(callback) = e.borrow().on_message_listener {
+    //         callback(msg);
+    //     }
+    // });
+}
+
+#[no_mangle]
 pub unsafe fn on_keyup_event(key: *mut u8, length: usize) {
     let key = String::from_raw_parts(key, length, length);
     JS.with(|e| {
@@ -323,50 +358,5 @@ pub fn alloc(size: usize) -> *const u8 {
 
 #[no_mangle]
 pub fn start() {
-    game::start();
-}
-
-pub struct Context2D {}
-
-impl CanvasContext for Context2D {
-    fn draw_image_at(&self, res_id: i32, x: i32, y: i32) {
-        draw_image_at(res_id, x, y);
-    }
-
-    fn draw_image(
-        &self,
-        res_id: i32,
-        source_x: i32,
-        source_y: i32,
-        source_width: i32,
-        source_height: i32,
-        dest_x: i32,
-        dest_y: i32,
-        dest_width: i32,
-        dest_height: i32,
-    ) {
-        draw_image(
-            res_id,
-            source_x,
-            source_y,
-            source_width,
-            source_height,
-            dest_x,
-            dest_y,
-            dest_width,
-            dest_height,
-        );
-    }
-
-    fn fill_style(&self, style: &str) {
-        fill_style(style);
-    }
-
-    fn fill_rect(&self, x: i32, y: i32, width: i32, height: i32) {
-        fill_rect(x, y, width, height);
-    }
-
-    fn fill_text(&self, text: &str, x: i32, y: i32) {
-        fill_text(text, x, y);
-    }
+    connect("ws://127.0.0.1:8080");
 }

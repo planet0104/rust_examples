@@ -120,6 +120,19 @@ function alloc_string(string){
     return { ptr:offset, len:bytes.length };
 }
 
+function alloc_blob(blob, callback){
+    var offset = exports.alloc(blob.size);
+    const bytes = new Uint8Array(exports.memory.buffer, offset, blob.size);
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        //console.log("blog读取结果", reader.result, e);
+        //设置数据
+        bytes.set(new Uint8Array(reader.result));
+        callback({ ptr:offset, len:blob.size });
+    }
+    reader.readAsArrayBuffer(blob);
+}
+
 //加载图片资源 srcMap为json对象
 function loadResources(srcMap, listener){
     var total = Object.keys(srcMap).length;
@@ -256,8 +269,17 @@ function connect(url){
         exports.on_connect();
 
         socket.onmessage = function(event){
-            var msg = alloc_string(event.data);
-            exports.on_message(msg.ptr, msg.len);
+            console.log("onmessage", event);
+            if (event.data instanceof String){
+                var msg = alloc_string(event.data);
+                exports.on_message(msg.ptr, msg.len);
+            }else if(event.data instanceof Blob){
+                alloc_blob(event.data, function(msg){
+                    exports.on_binary_message(msg.ptr, msg.len);
+                });
+            }else{
+                console.log("未定义消息.");
+            }
         };
 
         socket.onclose = function(event) {

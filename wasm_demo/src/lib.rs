@@ -313,19 +313,10 @@ pub unsafe fn on_message(msg: *mut u8, length: usize) {
 #[no_mangle]
 pub unsafe fn on_binary_message(msg: *mut u8, length: usize) {
     let msg = Vec::from_raw_parts(msg, length, length);
-
-    console_log(&format!("解码之前:{:?}", msg));
-
+    //console_log(&format!("解码之后: {:?}", decoded));
+    let s = current_time_millis();
     let decoded:Vec<SData> = deserialize(&msg[..]).unwrap();
-
-    console_log(&format!("解码之后: {:?}", decoded));
-    
-    // let msg = String::from_raw_parts(msg, length, length);
-    // JS.with(|e| {
-    //     if let Some(callback) = e.borrow().on_message_listener {
-    //         callback(msg);
-    //     }
-    // });
+    console_log(&format!("解码之后: {:?} 耗时:{}", decoded, current_time_millis()-s));
 }
 
 #[no_mangle]

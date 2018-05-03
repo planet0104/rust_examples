@@ -8,7 +8,9 @@ extern crate serde_derive;
 extern crate bincode;
 extern crate serde;
 
-use bincode::serialize;
+use std::time::{Duration, Instant};
+
+use bincode::{serialize, deserialize};
 
 //精灵信息: Vec<id,x,y,res_id>
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,6 +25,10 @@ pub struct SData{
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Child{
     pub name: String,
+}
+
+pub fn duration_to_milis(duration: &Duration) -> f64{
+    duration.as_secs() as f64 * 1000.0 + duration.subsec_nanos() as f64 / 1_000_000.0
 }
 
 fn main() {
@@ -45,13 +51,26 @@ fn main() {
                 x:120,y:100,id:100,res:255,
 				child:Child{name: String::from("abcd")}
             });
+			sprites.push(SData{
+                x:120,y:100,id:120,res:255,
+				child:Child{name: String::from("eebb")}
+            });
+			sprites.push(SData{
+                x:120,y:190,id:120,res:255,
+				child:Child{name: String::from("855")}
+            });
+			for i in 0..100{
+				sprites.push(SData{
+					x:120,y:i/2,id:120+i as u32,res:i/2,
+					child:Child{name: String::from("855")}
+				});
+			}
 
-			println!("编码之前:{:?}", sprites);
+			//println!("编码之前:{:?}", sprites);
 
             let encoded: Vec<u8> = serialize(&sprites).unwrap();
 
-            println!("编码之后:{:?}", encoded);
-
+            println!("编码之后长度:{}", encoded.len());
 			let message = OwnedMessage::Binary(encoded);
 			client.send_message(&message).unwrap();
 

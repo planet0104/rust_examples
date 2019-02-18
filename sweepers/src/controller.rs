@@ -1,19 +1,20 @@
-extern crate gdi32;
-extern crate user32;
-extern crate winapi;
-use winapi::windef::{ HGDIOBJ, HPEN, HDC, COLORREF };
-use winapi::wingdi::{ PS_SOLID };
-use params::{ NUM_ELITE, NUM_TICKS, MINE_SCALE, WINDOW_WIDTH, WINDOW_HEIGHT, NUM_MINES, NUM_SWEEPERS, MUTATION_RATE, CROSSOVER_RATE };
+use winapi::shared::windef::{ HGDIOBJ, HPEN, HDC, COLORREF };
+use winapi::um::wingdi::{ PS_SOLID };
+use crate::params::{ NUM_ELITE, NUM_TICKS, MINE_SCALE, WINDOW_WIDTH, WINDOW_HEIGHT, NUM_MINES, NUM_SWEEPERS, MUTATION_RATE, CROSSOVER_RATE };
 use std::ptr::null_mut;
 
 //控制器
-use gen_alg::{ Genome };
-use mine_sweeper::{ MineSweeper };
-use vector_2d::{Vector2D};
-use gen_alg::{ GenAlg };
-use matrix::Matrix;
-use utils::{ random_float, PointF, rgb };
-use devices::{ str_to_ws,move_to_ex, line_to, text_out };
+use crate::gen_alg::{ Genome };
+use crate::mine_sweeper::{ MineSweeper };
+use crate::vector_2d::{Vector2D};
+use crate::gen_alg::{ GenAlg };
+use crate::matrix::Matrix;
+use crate::utils::{ random_float, PointF, rgb };
+use crate::devices::{ str_to_ws,move_to_ex, line_to, text_out };
+
+use winapi::um::wingdi;
+use winapi::um::winuser;
+use winapi::um::winuser::{ MB_OK };
 
 const NUM_SWEEPER_VERTS :usize = 16;
 const NUM_MINE_VERTS :usize = 4;
@@ -60,10 +61,10 @@ impl Drop for Controller {
         println!("Drop Controller...");
         //删除HPEN
         unsafe{
-            gdi32::DeleteObject(self.blue_pen as HGDIOBJ);
-            gdi32::DeleteObject(self.red_pen as HGDIOBJ);
-            gdi32::DeleteObject(self.green_pen as HGDIOBJ);
-            gdi32::DeleteObject(self.old_pen as HGDIOBJ);
+            wingdi::DeleteObject(self.blue_pen as HGDIOBJ);
+            wingdi::DeleteObject(self.red_pen as HGDIOBJ);
+            wingdi::DeleteObject(self.green_pen as HGDIOBJ);
+            wingdi::DeleteObject(self.old_pen as HGDIOBJ);
         }
     }
 }
@@ -158,9 +159,9 @@ impl Controller{
             mines: mines,
             cx_client: WINDOW_WIDTH,
             cy_client: WINDOW_HEIGHT,
-            blue_pen: unsafe{ gdi32::CreatePen(PS_SOLID, 1, rgb(0, 0, 255) as COLORREF) },
-            red_pen: unsafe{ gdi32::CreatePen(PS_SOLID, 1, rgb(255, 0, 0) as COLORREF) },
-            green_pen: unsafe { gdi32::CreatePen(PS_SOLID, 1, rgb(0, 150, 0) as COLORREF) },
+            blue_pen: unsafe{ wingdi::CreatePen(PS_SOLID as i32, 1, rgb(0, 0, 255) as COLORREF) },
+            red_pen: unsafe{ wingdi::CreatePen(PS_SOLID as i32, 1, rgb(255, 0, 0) as COLORREF) },
+            green_pen: unsafe { wingdi::CreatePen(PS_SOLID as i32, 1, rgb(0, 150, 0) as COLORREF) },
             old_pen: 0 as HPEN,
             sweeper_vb: sweeper_vb,
             mine_vb:mine_vb,
@@ -189,7 +190,7 @@ impl Controller{
 
             //绘制最佳适应分图
             let mut x = 0.0;
-            self.old_pen = gdi32::SelectObject(surface, self.red_pen as HGDIOBJ) as HPEN;
+            self.old_pen = wingdi::SelectObject(surface, self.red_pen as HGDIOBJ) as HPEN;
 
             move_to_ex(surface, 0.0, self.cy_client as f64);
 
@@ -200,7 +201,7 @@ impl Controller{
             
             //绘制平均适合度的图表
             x = 0.0;
-            gdi32::SelectObject(surface, self.blue_pen as HGDIOBJ);
+            wingdi::SelectObject(surface, self.blue_pen as HGDIOBJ);
             move_to_ex(surface, 0.0, self.cy_client as f64);
 
             for i in 0..self.av_fitness.len() {
@@ -208,7 +209,7 @@ impl Controller{
                 x += h_slice as f64;
             }
             //恢复PEN
-            gdi32::SelectObject(surface, self.old_pen as HGDIOBJ);
+            wingdi::SelectObject(surface, self.old_pen as HGDIOBJ);
         }
     }
 
@@ -241,7 +242,7 @@ impl Controller{
                 if !self.sweepers[i].update(&self.mines) {
                     //神经网络处理出错
                     unsafe {
-                        user32::MessageBoxW(null_mut(), str_to_ws("NN输入数量错误！").as_ptr(), str_to_ws("错误").as_ptr(), winapi::MB_OK);
+                        winuser::MessageBoxW(null_mut(), str_to_ws("NN输入数量错误！").as_ptr(), str_to_ws("错误").as_ptr(), MB_OK);
                         return false;
                     }
                 }
@@ -300,7 +301,7 @@ impl Controller{
 
             //如果以加速的速度运行，不呈现
             if !self.fast_render {
-                self.old_pen = gdi32::SelectObject(surface, self.green_pen as HGDIOBJ) as HPEN;
+                self.old_pen = wingdi::SelectObject(surface, self.green_pen as HGDIOBJ) as HPEN;
 
                 //绘制地雷
                 for i in 0..self.num_mines {
@@ -316,11 +317,11 @@ impl Controller{
                 }
 
                 //我们希望fittest显示为红色
-                gdi32::SelectObject(surface, self.red_pen as HGDIOBJ);
+                wingdi::SelectObject(surface, self.red_pen as HGDIOBJ);
                 //render the sweepers
                 for i in 0..NUM_SWEEPERS {
                     if i == NUM_ELITE {
-                        gdi32::SelectObject(surface, self.old_pen as HGDIOBJ);
+                        wingdi::SelectObject(surface, self.old_pen as HGDIOBJ);
                     }
 
                     let mut sweeper_vb = self.sweeper_vb.clone();
@@ -347,7 +348,7 @@ impl Controller{
                     }
                 }
                 //恢复old pen
-                gdi32::SelectObject(surface, self.old_pen as HGDIOBJ);
+                wingdi::SelectObject(surface, self.old_pen as HGDIOBJ);
             }//end if
             else {
                 self.plot_stats(surface);

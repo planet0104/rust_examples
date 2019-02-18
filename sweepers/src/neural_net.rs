@@ -1,7 +1,7 @@
 //创建一个前馈神经网络
 
-use utils::{ random_clamped };
-use params::{ ACTIVATION_RESPONSE,BIAS,NEURONS_PER_HIDDEN_LAYER, NUM_HIDDEN,NUM_OUTPUTS,NUM_INPUTS, };
+use crate::utils::{ random_clamped };
+use crate::params::{ ACTIVATION_RESPONSE,BIAS,NEURONS_PER_HIDDEN_LAYER, NUM_HIDDEN,NUM_OUTPUTS,NUM_INPUTS, };
 
 //神经元
 pub struct Neuron{

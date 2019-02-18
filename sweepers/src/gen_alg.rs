@@ -1,8 +1,8 @@
 //遗传算法类。这是基于操作实数Vector元素。 用于调整前馈神经网络中的权重。
 
 use std::cmp::Ordering;
-use utils::{ random_clamped, random_float, random_int };
-use params::{ NUM_COPIES_ELITE,MAX_PERTURBATION, NUM_ELITE };
+use crate::utils::{ random_clamped, random_float, random_int };
+use crate::params::{ NUM_COPIES_ELITE,MAX_PERTURBATION, NUM_ELITE };
 
 //保持每个基因组的结构
 #[derive(Debug)]

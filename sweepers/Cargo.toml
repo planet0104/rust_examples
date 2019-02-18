@@ -2,9 +2,10 @@
 name = "sweepers"
 version = "0.1.0"
 authors = ["JiaYe"]
+edition = "2018"
 
 [dependencies]
 rand = "*"
-winapi = "*"
-user32-sys = "*"
-gdi32-sys = "*"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser"] }

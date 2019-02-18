@@ -1,8 +1,8 @@
-use neural_net::{ NeuralNet };
-use vector_2d::{Vector2D};
-use utils::{ random_float,clamp, PointF };
-use matrix::Matrix;
-use params::{ START_ENERGY, WINDOW_HEIGHT, NUM_OUTPUTS, WINDOW_WIDTH, SWEEPER_SCALE,TWO_PI,MAX_TURN_RATE };
+use crate::neural_net::{ NeuralNet };
+use crate::vector_2d::{Vector2D};
+use crate::utils::{ random_float,clamp, PointF };
+use crate::matrix::Matrix;
+use crate::params::{ START_ENERGY, WINDOW_HEIGHT, NUM_OUTPUTS, WINDOW_WIDTH, SWEEPER_SCALE,TWO_PI,MAX_TURN_RATE };
 
 pub struct MineSweeper {
     //扫雷机的神经网络

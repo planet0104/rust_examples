@@ -1,14 +1,17 @@
-use std::ops::{Mul, Sub, AddAssign, SubAssign, DivAssign, MulAssign};
+use std::ops::{AddAssign, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug)]
-pub struct Vector2D{
+pub struct Vector2D {
     pub x: f64,
     pub y: f64,
 }
 
 impl Clone for Vector2D {
     fn clone(&self) -> Vector2D {
-        Vector2D{ x: self.x, y: self.y }
+        Vector2D {
+            x: self.x,
+            y: self.y,
+        }
     }
 
     fn clone_from(&mut self, source: &Self) {
@@ -20,8 +23,8 @@ impl Clone for Vector2D {
 // +=
 impl AddAssign for Vector2D {
     fn add_assign(&mut self, other: Vector2D) {
-         self.x += other.x;
-         self.y += other.y;
+        self.x += other.x;
+        self.y += other.y;
     }
 }
 
@@ -80,45 +83,50 @@ impl Sub for Vector2D {
     }
 }
 
-
 impl PartialEq for Vector2D {
     fn eq(&self, other: &Self) -> bool {
         self.x == other.x && self.y == other.y
     }
 }
 
-impl Vector2D{
-    pub fn new(x:f64, y:f64)->Vector2D{
-        Vector2D{ x: x, y:y }
+impl Vector2D {
+    pub fn new(x: f64, y: f64) -> Vector2D {
+        Vector2D { x: x, y: y }
     }
 
-    pub fn length(v: &Vector2D)->f64{
-        (v.x * v.x + v.y*v.y).sqrt()
+    pub fn length(v: &Vector2D) -> f64 {
+        (v.x * v.x + v.y * v.y).sqrt()
     }
 
-    pub fn normalize(v : &mut Vector2D){
+    pub fn normalize(v: &mut Vector2D) {
         let len = Vector2D::length(v);
         v.x = v.x / len;
         v.y = v.y / len;
     }
 
-    pub fn dot(v1: &Vector2D, v2: &Vector2D)->f64{
-        v1.x*v2.x + v1.y*v2.y
+    pub fn dot(v1: &Vector2D, v2: &Vector2D) -> f64 {
+        v1.x * v2.x + v1.y * v2.y
     }
 
-    pub fn sign(v1: &Vector2D, v2: &Vector2D)->i32{
-        if v1.y*v2.x > v1.x*v2.y {
+    pub fn sign(v1: &Vector2D, v2: &Vector2D) -> i32 {
+        if v1.y * v2.x > v1.x * v2.y {
             return 1;
-        }else{
+        } else {
             return -1;
         }
     }
 
-    pub fn sub(v1: &Vector2D, v2: &Vector2D) ->Vector2D {
-        Vector2D { x:v1.x - v2.x, y:v1.y - v2.y }
+    pub fn sub(v1: &Vector2D, v2: &Vector2D) -> Vector2D {
+        Vector2D {
+            x: v1.x - v2.x,
+            y: v1.y - v2.y,
+        }
     }
 
-    pub fn mul(v:&Vector2D, d: f64) ->Vector2D{
-        Vector2D{ x:v.x * d, y:v.y * d }
+    pub fn mul(v: &Vector2D, d: f64) -> Vector2D {
+        Vector2D {
+            x: v.x * d,
+            y: v.y * d,
+        }
     }
 }

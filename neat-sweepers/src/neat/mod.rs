@@ -1,6 +1,6 @@
-pub mod phenotype;
-pub mod params;
-pub mod species;
-pub mod genes;
 pub mod ga;
+pub mod genes;
+pub mod params;
+pub mod phenotype;
+pub mod species;
 pub mod utils;

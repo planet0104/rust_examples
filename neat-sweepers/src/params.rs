@@ -14,7 +14,7 @@ pub const ENERGY_COST_PER_TICK: f64 = 0.001;
 
 pub const SWEEPER_SCALE: i32 = 5;
 
-pub const WINDOW_WIDTH:i32 = 405;
-pub const WINDOW_HEIGHT:i32 = 405;
+pub const WINDOW_WIDTH: i32 = 405;
+pub const WINDOW_HEIGHT: i32 = 405;
 
-pub const TWO_PI:f64 = PI*2.0;
+pub const TWO_PI: f64 = PI * 2.0;

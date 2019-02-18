@@ -1,18 +1,17 @@
-use params::{ NUM_TICKS, MINE_SCALE, WINDOW_WIDTH, WINDOW_HEIGHT, NUM_MINES, NUM_SWEEPERS };
-use std::ptr::null_mut;
+use crate::params::{MINE_SCALE, NUM_MINES, NUM_SWEEPERS, NUM_TICKS, WINDOW_HEIGHT, WINDOW_WIDTH};
 
-use neat::ga::GA;
+use crate::neat::ga::GA;
 
 //控制器
-use mine_sweeper::{ MineSweeper };
-use vector_2d::{Vector2D};
-use matrix::Matrix;
-use utils::{ random_float, PointF, rgb };
-use win::ui;
-use params;
+use crate::matrix::Matrix;
+use crate::mine_sweeper::MineSweeper;
+use crate::params;
+use crate::utils::{random_float, rgb, PointF};
+use crate::vector_2d::Vector2D;
+use crate::win::ui;
 
-const NUM_SWEEPER_VERTS :usize = 16;
-const NUM_MINE_VERTS :usize = 4;
+const NUM_SWEEPER_VERTS: usize = 16;
+const NUM_MINE_VERTS: usize = 4;
 
 pub struct Controller {
     //扫雷机
@@ -42,9 +41,8 @@ pub struct Controller {
     //世代计数器
     generations: i32,
     //窗口尺寸
-    cx_client : i32,
+    cx_client: i32,
     cy_client: i32,
-
 }
 
 impl Drop for Controller {
@@ -57,7 +55,7 @@ impl Drop for Controller {
     }
 }
 
-impl Controller{
+impl Controller {
     //创建Controller的实例时，会有一系列事情发生
     // 1.创建Minesweeper对象。
     // 4.创建大量的地雷并被随机的散播到各地。
@@ -66,30 +64,31 @@ impl Controller{
 
     pub fn new() -> Controller {
         println!("Controller::new");
-        let sweeper = vec![PointF::from(-1.0, -1.0),
-                PointF::from(-1.0, 1.0),
-                PointF::from(-0.5, 1.0),
-                PointF::from(-0.5, -1.0),
+        let sweeper = vec![
+            PointF::from(-1.0, -1.0),
+            PointF::from(-1.0, 1.0),
+            PointF::from(-0.5, 1.0),
+            PointF::from(-0.5, -1.0),
+            PointF::from(0.5, -1.0),
+            PointF::from(1.0, -1.0),
+            PointF::from(1.0, 1.0),
+            PointF::from(0.5, 1.0),
+            PointF::from(-0.5, -0.5),
+            PointF::from(0.5, -0.5),
+            PointF::from(-0.5, 0.5),
+            PointF::from(-0.25, 0.5),
+            PointF::from(-0.25, 1.75),
+            PointF::from(0.25, 1.75),
+            PointF::from(0.25, 0.5),
+            PointF::from(0.5, 0.5),
+        ];
+        let mine: Vec<PointF> = vec![
+            PointF::from(-1.0, -1.0),
+            PointF::from(-1.0, 1.0),
+            PointF::from(1.0, 1.0),
+            PointF::from(1.0, -1.0),
+        ];
 
-                PointF::from(0.5, -1.0),
-                PointF::from(1.0, -1.0),
-                PointF::from(1.0, 1.0),
-                PointF::from(0.5, 1.0),
-                
-                PointF::from(-0.5, -0.5),
-                PointF::from(0.5, -0.5),
-
-                PointF::from(-0.5, 0.5),
-                PointF::from(-0.25, 0.5),
-                PointF::from(-0.25, 1.75),
-                PointF::from(0.25, 1.75),
-                PointF::from(0.25, 0.5),
-                PointF::from(0.5, 0.5)];
-        let mine:Vec<PointF> = vec![PointF::from(-1.0, -1.0),
-                PointF::from(-1.0, 1.0),
-                PointF::from(1.0, 1.0),
-                PointF::from(1.0, -1.0)];
-        
         //让我们创建扫雷器
         let mut sweepers: Vec<MineSweeper> = vec![];
         let mut mines: Vec<Vector2D> = vec![];
@@ -102,8 +101,9 @@ impl Controller{
         //在应用程序窗口内的随机位置初始化地雷
         for _ in 0..NUM_MINES {
             mines.push(Vector2D::new(
-                random_float()*WINDOW_WIDTH as f64,
-                random_float()*WINDOW_HEIGHT as f64));
+                random_float() * WINDOW_WIDTH as f64,
+                random_float() * WINDOW_HEIGHT as f64,
+            ));
         }
 
         //填充顶点缓冲区
@@ -120,7 +120,7 @@ impl Controller{
         Controller {
             num_sweepers: NUM_SWEEPERS,
             ga: ga,
-            fast_render:false,
+            fast_render: false,
             render_enable: true,
             ticks: 0,
             num_mines: NUM_MINES,
@@ -134,7 +134,7 @@ impl Controller{
             green_pen: ui::solid_pen(1, rgb(0, 150, 0)),
             old_pen: 0 as ui::Pen,
             sweeper_vb: sweeper_vb,
-            mine_vb:mine_vb,
+            mine_vb: mine_vb,
             av_fitness: vec![],
             best_fitness: vec![],
         }
@@ -150,11 +150,11 @@ impl Controller{
         ui::text_out(surface, 5, 40, &s);
 
         //绘制图形
-        let mut h_slice = self.cx_client / (self.generations+1);
+        let mut h_slice = self.cx_client / (self.generations + 1);
         if h_slice < 1 {
             h_slice = 1;
         }
-        let v_slice = self.cy_client as f64 / ((self.ga.best_ever_fitness()+1.0)*2.0);
+        let v_slice = self.cy_client as f64 / ((self.ga.best_ever_fitness() + 1.0) * 2.0);
 
         //绘制最佳适应分图
         let mut x = 0.0;
@@ -163,17 +163,25 @@ impl Controller{
         ui::move_to_ex(surface, 0.0, self.cy_client as f64);
 
         for i in 0..self.best_fitness.len() {
-            ui::line_to(surface, x, self.cy_client as f64 - v_slice* self.best_fitness[i]);
+            ui::line_to(
+                surface,
+                x,
+                self.cy_client as f64 - v_slice * self.best_fitness[i],
+            );
             x += h_slice as f64;
         }
-        
+
         //绘制平均适合度的图表
         x = 0.0;
         ui::select_pen(surface, self.blue_pen);
         ui::move_to_ex(surface, 0.0, self.cy_client as f64);
 
         for i in 0..self.av_fitness.len() {
-            ui::line_to(surface, x, self.cy_client as f64 - v_slice* self.av_fitness[i]);
+            ui::line_to(
+                surface,
+                x,
+                self.cy_client as f64 - v_slice * self.av_fitness[i],
+            );
             x += h_slice as f64;
         }
         //恢复PEN
@@ -181,7 +189,7 @@ impl Controller{
     }
 
     //设置地雷的转换矩阵，并将世界变换应用于传递给此方法的顶点缓冲区中的每个顶点。
-    pub fn world_transform(buffer: &mut Vec<PointF>, pos: &Vector2D){
+    pub fn world_transform(buffer: &mut Vec<PointF>, pos: &Vector2D) {
         let mut mat_transfrom = Matrix::new();
         mat_transfrom.scale(MINE_SCALE, MINE_SCALE);
         mat_transfrom.translate(pos.x, pos.y);
@@ -212,18 +220,17 @@ impl Controller{
                 }
                 //看是否找到了一个地雷
                 let grab_hit = self.sweepers[i].check_for_mine(&self.mines, MINE_SCALE);
-                if grab_hit >0 {
+                if grab_hit > 0 {
                     //我们发现了一个雷so增加适应分
                     self.sweepers[i].increment_fitness();
                     //地雷被发现，so随机改变一下它的位置
-                    self.mines[grab_hit as usize] =Vector2D::new(
-                            random_float()*WINDOW_WIDTH as f64,
-                            random_float()*WINDOW_HEIGHT as f64);
+                    self.mines[grab_hit as usize] = Vector2D::new(
+                        random_float() * WINDOW_WIDTH as f64,
+                        random_float() * WINDOW_HEIGHT as f64,
+                    );
                 }
             }
-            
         }
-
         //进化到下一代
         //是时间运行GA和更新扫雷机与他们的新NNs了
         //以下程序为运行遗传算法并用它们新的神经网络更新扫雷机
@@ -231,7 +238,12 @@ impl Controller{
             //最好适应分和平均适应分用于在窗口中展示
             self.av_fitness.push(self.ga.average_fitness());
             self.best_fitness.push(self.ga.best_ever_fitness());
-            println!("Generation: {} 最好: {:?} 平均: {:?}", self.generations, self.ga.best_ever_fitness(), self.ga.average_fitness());
+            println!(
+                "Generation: {} 最好: {:?} 平均: {:?}",
+                self.generations,
+                self.ga.best_ever_fitness(),
+                self.ga.average_fitness()
+            );
             //时代计数器+1
             self.generations += 1;
             //重置循环
@@ -251,13 +263,22 @@ impl Controller{
     }
 
     pub fn render(&mut self, surface: ui::Surface) {
-        if !self.render_enable { return; }
+        if !self.render_enable {
+            return;
+        }
         //绘制状态
         let s = format!("代: {}", self.generations);
         ui::text_out(surface, 5, 0, &s);
 
         self.old_pen = ui::select_pen(surface, self.green_pen);
-        ui::rectangle(surface, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, ui::rgb(255, 255, 255));
+        ui::rectangle(
+            surface,
+            0,
+            0,
+            WINDOW_WIDTH,
+            WINDOW_HEIGHT,
+            ui::rgb(255, 255, 255),
+        );
         ui::select_pen(surface, self.old_pen);
 
         //如果以加速的速度运行，不呈现
@@ -290,13 +311,13 @@ impl Controller{
                 self.sweepers[i].world_transform(&mut sweeper_vb);
                 //画扫雷机的左轮
                 ui::move_to_ex(surface, sweeper_vb[0].x, sweeper_vb[0].y);
-                for vert in 1..4{
+                for vert in 1..4 {
                     ui::line_to(surface, sweeper_vb[vert].x, sweeper_vb[vert].y);
                 }
                 ui::line_to(surface, sweeper_vb[0].x, sweeper_vb[0].y);
                 //画扫雷机的右轮
                 ui::move_to_ex(surface, sweeper_vb[4].x, sweeper_vb[4].y);
-                for vert in 5..8{
+                for vert in 5..8 {
                     ui::line_to(surface, sweeper_vb[vert].x, sweeper_vb[vert].y);
                 }
                 ui::line_to(surface, sweeper_vb[4].x, sweeper_vb[4].y);
@@ -305,48 +326,80 @@ impl Controller{
                 ui::line_to(surface, sweeper_vb[9].x, sweeper_vb[9].y);
 
                 ui::move_to_ex(surface, sweeper_vb[10].x, sweeper_vb[10].y);
-                for vert in 11..16{
+                for vert in 11..16 {
                     ui::line_to(surface, sweeper_vb[vert].x, sweeper_vb[vert].y);
                 }
             }
             //恢复old pen
             ui::select_pen(surface, self.old_pen);
-        }//end if
+        }
+        //end if
         else {
             self.plot_stats(surface);
         }
-        
+
         //绘制NEAT信息
         self.old_pen = ui::select_pen(surface, self.green_pen);
-        ui::rectangle(surface, WINDOW_HEIGHT-1, 0, WINDOW_WIDTH*2, WINDOW_HEIGHT, ui::rgb(255, 255, 255));
+        ui::rectangle(
+            surface,
+            WINDOW_HEIGHT - 1,
+            0,
+            WINDOW_WIDTH * 2,
+            WINDOW_HEIGHT,
+            ui::rgb(255, 255, 255),
+        );
         ui::select_pen(surface, self.old_pen);
 
         //绘制最好的4个网络
-        let brains:Vec<usize> = self.ga.get_best_phenotypes_from_last_generation();
-        if brains.len() > 0{
+        let brains: Vec<usize> = self.ga.get_best_phenotypes_from_last_generation();
+        if brains.len() > 0 {
             let cx_info = WINDOW_WIDTH;
             let cy_info = WINDOW_HEIGHT;
             let sp = 20;
-            self.ga.get_phenotype(brains[0]).draw_net(surface, cx_info, sp, cx_info+cx_info/2, cy_info/2-sp*2);
-            self.ga.get_phenotype(brains[1]).draw_net(surface, cx_info+cx_info/2, sp, cx_info+cx_info, cy_info/2-sp*2);
-            self.ga.get_phenotype(brains[2]).draw_net(surface, cx_info, cy_info/2, cx_info+cx_info/2, cy_info-sp*3);
-            self.ga.get_phenotype(brains[3]).draw_net(surface, cx_info+cx_info/2, cy_info/2, cx_info+cx_info, cy_info-sp*3);
+            self.ga.get_phenotype(brains[0]).draw_net(
+                surface,
+                cx_info,
+                sp,
+                cx_info + cx_info / 2,
+                cy_info / 2 - sp * 2,
+            );
+            self.ga.get_phenotype(brains[1]).draw_net(
+                surface,
+                cx_info + cx_info / 2,
+                sp,
+                cx_info + cx_info,
+                cy_info / 2 - sp * 2,
+            );
+            self.ga.get_phenotype(brains[2]).draw_net(
+                surface,
+                cx_info,
+                cy_info / 2,
+                cx_info + cx_info / 2,
+                cy_info - sp * 3,
+            );
+            self.ga.get_phenotype(brains[3]).draw_net(
+                surface,
+                cx_info + cx_info / 2,
+                cy_info / 2,
+                cx_info + cx_info,
+                cy_info - sp * 3,
+            );
 
-            if self.fast_render{
+            if self.fast_render {
                 self.ga.render_species_info(surface, 0, 140, cx_info, 160);
             }
         }
     }
-    
-    pub fn fast_render_toggle(&mut self){
+
+    pub fn fast_render_toggle(&mut self) {
         self.fast_render = !self.fast_render;
     }
 
-    pub fn render_enable_toggle(&mut self){
+    pub fn render_enable_toggle(&mut self) {
         self.render_enable = !self.render_enable;
     }
 
-    pub fn fast_render(&self) -> bool{
+    pub fn fast_render(&self) -> bool {
         self.fast_render
     }
 }

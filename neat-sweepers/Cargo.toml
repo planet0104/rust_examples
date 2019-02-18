@@ -1,10 +1,11 @@
 [package]
 name = "neat-sweepers"
 version = "0.1.0"
-authors = ["plane"]
+authors = ["JiaYe"]
+edition = "2018"
 
 [dependencies]
-rand = "*"
-winapi = "*"
-user32-sys = "*"
-gdi32-sys = "*"
+rand = "0.6.5"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser"] }

@@ -1,10 +1,11 @@
-use vector_2d::{Vector2D};
-use utils::{ random_float,clamp, PointF };
-use matrix::Matrix;
-use params::{ START_ENERGY, WINDOW_HEIGHT, NUM_OUTPUTS, WINDOW_WIDTH, SWEEPER_SCALE,TWO_PI,MAX_TURN_RATE };
-use neat;
-use neat::ga::GA;
-use neat::phenotype;
+use crate::matrix::Matrix;
+use crate::neat;
+use crate::neat::ga::GA;
+use crate::params::{
+    MAX_TURN_RATE, NUM_OUTPUTS, START_ENERGY, SWEEPER_SCALE, TWO_PI, WINDOW_HEIGHT, WINDOW_WIDTH,
+};
+use crate::utils::{clamp, random_float, PointF};
+use crate::vector_2d::Vector2D;
 
 pub struct MineSweeper {
     //扫雷机在世界坐标里的位置
@@ -25,7 +26,7 @@ pub struct MineSweeper {
 }
 
 impl MineSweeper {
-    pub fn new() ->MineSweeper {
+    pub fn new() -> MineSweeper {
         MineSweeper {
             rotation: random_float() * TWO_PI,
             left_track: 0.16,
@@ -33,7 +34,10 @@ impl MineSweeper {
             fitness: START_ENERGY,
             scale: SWEEPER_SCALE as f64,
             closest_mine: 0,
-            position: Vector2D::new(random_float()*WINDOW_WIDTH as f64, random_float()*WINDOW_HEIGHT as f64),
+            position: Vector2D::new(
+                random_float() * WINDOW_WIDTH as f64,
+                random_float() * WINDOW_HEIGHT as f64,
+            ),
             speed: 0.0,
             look_at: Vector2D::new(0.0, 0.0),
         }
@@ -43,21 +47,24 @@ impl MineSweeper {
         self.fitness
     }
 
-    pub fn increment_fitness(&mut self){
+    pub fn increment_fitness(&mut self) {
         self.fitness += 1.0;
     }
 
-    pub fn decrease_fitness(&mut self){
+    pub fn decrease_fitness(&mut self) {
         self.fitness -= 1.0;
     }
 
-    pub fn position(&self) ->&Vector2D {
+    pub fn position(&self) -> &Vector2D {
         &self.position
     }
 
     //重置扫地机的位置，适应分和旋转
     pub fn reset(&mut self) {
-        self.position = Vector2D::new(random_float()*WINDOW_WIDTH as f64, random_float()*WINDOW_HEIGHT as f64);
+        self.position = Vector2D::new(
+            random_float() * WINDOW_WIDTH as f64,
+            random_float() * WINDOW_HEIGHT as f64,
+        );
         self.fitness = START_ENERGY;
         self.rotation = random_float() * TWO_PI;
     }
@@ -81,9 +88,9 @@ impl MineSweeper {
     //
     //我们从大脑接收两个输出。lTrack&rTrack。
     //因此给定每个轨道的力，我们计算结果的旋转和加速度，并应用于当前速度矢量。
-    pub fn update(&mut self, mines: &Vec<Vector2D>, index:usize, ga:&mut GA) -> bool{
+    pub fn update(&mut self, mines: &Vec<Vector2D>, index: usize, ga: &mut GA) -> bool {
         //这一向量用来存放神经网络所有的输入
-        let mut inputs:Vec<f64> = vec![];
+        let mut inputs: Vec<f64> = vec![];
         //计算从扫雷机到与其最近的地雷（两个点）之间的向量
         let mut closest_mine = self.get_closest_mine(mines);
         //将该向量规范化(扫雷机的视线向量不需要再做规范化，因为它的长度已经等于1了)
@@ -93,7 +100,7 @@ impl MineSweeper {
         let dot = Vector2D::dot(&self.look_at, &closest_mine);
         let sign = Vector2D::sign(&self.look_at, &closest_mine);
 
-        inputs.push(dot*sign as f64);
+        inputs.push(dot * sign as f64);
 
         // //加入扫雷机到最近地雷之间的向量
         // inputs.push(closest_mine.x);
@@ -102,8 +109,10 @@ impl MineSweeper {
         // inputs.push(self.look_at.x);
         // inputs.push(self.look_at.y);
         //更新大脑，并从网络得到输出
-        let output = ga.get_phenotype(index).update(&inputs, neat::phenotype::RunType::Active);
-        
+        let output = ga
+            .get_phenotype(index)
+            .update(&inputs, neat::phenotype::RunType::Active);
+
         //确保在计算输出时没有错误
         if output.len() < NUM_OUTPUTS as usize {
             return false;
@@ -129,12 +138,20 @@ impl MineSweeper {
 
         //更新位置
         self.position += Vector2D::mul(&self.look_at, self.speed);
-        
+
         //屏幕越界处理
-        if self.position.x > WINDOW_WIDTH as f64 { self.position.x = 0.0; }
-        if self.position.x < 0.0 { self.position.x = WINDOW_WIDTH as f64; }
-        if self.position.y > WINDOW_HEIGHT as f64 { self.position.y = 0.0; }
-        if self.position.y < 0.0 { self.position.y = WINDOW_HEIGHT as f64; }
+        if self.position.x > WINDOW_WIDTH as f64 {
+            self.position.x = 0.0;
+        }
+        if self.position.x < 0.0 {
+            self.position.x = WINDOW_WIDTH as f64;
+        }
+        if self.position.y > WINDOW_HEIGHT as f64 {
+            self.position.y = 0.0;
+        }
+        if self.position.y < 0.0 {
+            self.position.y = WINDOW_HEIGHT as f64;
+        }
 
         true
     }
@@ -144,14 +161,14 @@ impl MineSweeper {
     pub fn check_for_mine(&self, mines: &Vec<Vector2D>, size: f64) -> i32 {
         let dist_to_object = Vector2D::sub(&self.position, &mines[self.closest_mine]);
         //println!("dist_to_object.len() = {}", dist_to_object.len());
-        if Vector2D::length(&dist_to_object) < (size+5.0) {
+        if Vector2D::length(&dist_to_object) < (size + 5.0) {
             return self.closest_mine as i32;
         }
         -1
     }
 
     //返回一个向量到最邻近的地雷
-    pub fn get_closest_mine(&mut self, mines: &Vec<Vector2D>) ->Vector2D {
+    pub fn get_closest_mine(&mut self, mines: &Vec<Vector2D>) -> Vector2D {
         let mut closest_so_far = 99999.0;
         let mut closest_object = Vector2D::new(0.0, 0.0);
         for i in 0..mines.len() {

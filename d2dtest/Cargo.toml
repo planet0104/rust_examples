@@ -1,0 +1,10 @@
+[package]
+name = "d2dtest"
+version = "0.1.0"
+authors = ["planet0104 <planet0104@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+winit = "0.19.1"
+native-windows-gui = "0.2.1"
+winapi = { version = "0.3.7", features = ["d2d1"] }

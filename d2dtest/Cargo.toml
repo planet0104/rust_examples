@@ -5,6 +5,12 @@ authors = ["planet0104 <planet0104@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+com-wrapper = "0.1.0"
+direct2d = "0.3.0-alpha1"
+direct3d11 = "0.3.0-alpha2"
+dxgi = "0.3.0-alpha4"
+math2d = "0.2.0-alpha8"
 winit = "0.19.1"
-native-windows-gui = "0.2.1"
-winapi = { version = "0.3.7", features = ["d2d1"] }
+png = "0.14.1"
+image = "*"
+winapi = { version = "0.3.7", features = ["d2d1", "synchapi"] }

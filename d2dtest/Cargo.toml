@@ -10,6 +10,5 @@ dxgi = "0.3.0-alpha4"
 math2d = "0.2.0-alpha8"
 directwrite = "0.3.0-alpha4"
 winit = "0.19.1"
-png = "0.14.1"
-image = "*"
+image = "0.21.1"
 winapi = { version = "0.3.7", features = ["d2d1", "synchapi"] }

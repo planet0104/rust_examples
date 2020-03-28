@@ -27,7 +27,7 @@ impl Neuron{
         //我们需要一个额外的权重，因此+1
         let mut weight:Vec<f64> = vec![];
         //用初始随机值设置权重
-        for i in 0..num_inputs+1 {
+        for _ in 0..num_inputs+1 {
             weight.push(random_clamped());
         }
         Neuron{

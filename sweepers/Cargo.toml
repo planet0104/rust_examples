@@ -5,7 +5,11 @@ authors = ["JiaYe"]
 edition = "2018"
 
 [dependencies]
-rand = "*"
+rand = "0.7.3"
+minifb = "0.15.3"
+raqote = "0.7.14"
+font-kit = "0.5.0"
+msgbox = "0.4.0"
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winuser"] }
+# [target.'cfg(windows)'.dependencies]
+# winapi = { version = "0.3", features = ["winuser"] }

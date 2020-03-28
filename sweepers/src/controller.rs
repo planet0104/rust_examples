@@ -1,25 +1,23 @@
-use winapi::shared::windef::{ HGDIOBJ, HPEN, HDC, COLORREF };
-use winapi::um::wingdi::{ PS_SOLID };
+// use winapi::shared::windef::{ HGDIOBJ, HPEN, HDC, COLORREF };
+// use winapi::um::wingdi::{ PS_SOLID };
 use crate::params::{ NUM_ELITE, NUM_TICKS, MINE_SCALE, WINDOW_WIDTH, WINDOW_HEIGHT, NUM_MINES, NUM_SWEEPERS, MUTATION_RATE, CROSSOVER_RATE };
-use std::ptr::null_mut;
-
+use raqote::{
+    DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source, StrokeStyle,
+};
+use font_kit::font::Font;
+use msgbox::IconType;
 //控制器
 use crate::gen_alg::{ Genome };
 use crate::mine_sweeper::{ MineSweeper };
 use crate::vector_2d::{Vector2D};
 use crate::gen_alg::{ GenAlg };
 use crate::matrix::Matrix;
-use crate::utils::{ random_float, PointF, rgb };
-use crate::devices::{ str_to_ws,move_to_ex, line_to, text_out };
-
-use winapi::um::wingdi;
-use winapi::um::winuser;
-use winapi::um::winuser::{ MB_OK };
+use crate::utils::{ random_float, PointF };
 
 const NUM_SWEEPER_VERTS :usize = 16;
 const NUM_MINE_VERTS :usize = 4;
 
-pub struct Controller {
+pub struct Controller<'a> {
     //存储基因组群体
     the_population: Vec<Genome>,
     //扫雷机
@@ -38,10 +36,10 @@ pub struct Controller {
     //存储每一代的平均适合度以用于绘图。
     av_fitness: Vec<f64>,
     best_fitness: Vec<f64>,
-    red_pen: HPEN,
-    blue_pen: HPEN,
-    green_pen: HPEN,
-    old_pen: HPEN,
+    black_pen: Source<'a>,
+    red_pen: Source<'a>,
+    blue_pen: Source<'a>,
+    green_pen: Source<'a>,
     //hwnd_main: HWND,
     //切换模拟运行的速度
     fast_render: bool,
@@ -56,20 +54,7 @@ pub struct Controller {
 
 }
 
-impl Drop for Controller {
-    fn drop(&mut self) {
-        println!("Drop Controller...");
-        //删除HPEN
-        unsafe{
-            wingdi::DeleteObject(self.blue_pen as HGDIOBJ);
-            wingdi::DeleteObject(self.red_pen as HGDIOBJ);
-            wingdi::DeleteObject(self.green_pen as HGDIOBJ);
-            wingdi::DeleteObject(self.old_pen as HGDIOBJ);
-        }
-    }
-}
-
-impl Controller{
+impl <'a> Controller<'a>{
     //创建Controller的实例时，会有一系列事情发生
     // 1.创建Minesweeper对象。
     // 2.统计神经网络中所使用的权重总数，然后此数字被利用来初始化遗传算法类的一个实例。
@@ -78,8 +63,7 @@ impl Controller{
     // 5.为绘图函数创建所有的GDI画笔
     // 6.为扫雷机和地雷的形状创建顶点缓冲区
 
-    pub fn new() -> Controller {
-        println!("Controller::new");
+    pub fn new() -> Controller<'a> {
         let sweeper = vec![PointF::from(-1.0, -1.0),
                 PointF::from(-1.0, 1.0),
                 PointF::from(-0.5, 1.0),
@@ -159,10 +143,10 @@ impl Controller{
             mines: mines,
             cx_client: WINDOW_WIDTH,
             cy_client: WINDOW_HEIGHT,
-            blue_pen: unsafe{ wingdi::CreatePen(PS_SOLID as i32, 1, rgb(0, 0, 255) as COLORREF) },
-            red_pen: unsafe{ wingdi::CreatePen(PS_SOLID as i32, 1, rgb(255, 0, 0) as COLORREF) },
-            green_pen: unsafe { wingdi::CreatePen(PS_SOLID as i32, 1, rgb(0, 150, 0) as COLORREF) },
-            old_pen: 0 as HPEN,
+            black_pen: Source::Solid(SolidSource::from_unpremultiplied_argb(0xff, 0, 0, 0)),
+            blue_pen: Source::Solid(SolidSource::from_unpremultiplied_argb(0xff, 0, 0, 255)),
+            red_pen: Source::Solid(SolidSource::from_unpremultiplied_argb(0xff, 255, 0, 0)),
+            green_pen: Source::Solid(SolidSource::from_unpremultiplied_argb(0xff, 150, 0, 0)),
             sweeper_vb: sweeper_vb,
             mine_vb:mine_vb,
             av_fitness: vec![],
@@ -173,44 +157,68 @@ impl Controller{
 
     //此函数绘制了运行过程中的平均值和最佳拟合度的图表
     //给定一个在这个函数上绘制的曲面显示统计数据和一个显示最佳和平均适合度的粗略图形
-    fn plot_stats(&mut self, surface: HDC) {
-        unsafe{
-            let s = format!("最好适应性分数: {}", self.ga.best_fitness());
-            text_out(surface, 5, 20, &s);
+    fn plot_stats(&mut self, surface: &mut DrawTarget, font:&Font) {
+        let s = format!("最好适应性分数: {:.1}", self.ga.best_fitness());
+        surface.draw_text(
+            font,
+            12.,
+            &s,
+            Point::new(5., 40.),
+            &self.black_pen,
+            &DrawOptions::new(),
+        );
 
-            let s = format!("平均适应性分数: {}", self.ga.average_fitness());
-            text_out(surface, 5, 40, &s);
+        let s = format!("平均适应性分数: {:.1}", self.ga.average_fitness());
+        surface.draw_text(
+            font,
+            12.,
+            &s,
+            Point::new(5., 60.),
+            &self.black_pen,
+            &DrawOptions::new(),
+        );
 
-            //绘制图形
-            let mut h_slice = self.cx_client / (self.generations+1);
-            if h_slice < 1 {
-                h_slice = 1;
-            }
-            let v_slice = self.cy_client as f64 / ((self.ga.best_fitness()+1.0)*2.0);
-
-            //绘制最佳适应分图
-            let mut x = 0.0;
-            self.old_pen = wingdi::SelectObject(surface, self.red_pen as HGDIOBJ) as HPEN;
-
-            move_to_ex(surface, 0.0, self.cy_client as f64);
-
-            for i in 0..self.best_fitness.len() {
-                line_to(surface, x, self.cy_client as f64 - v_slice* self.best_fitness[i]);
-                x += h_slice as f64;
-            }
-            
-            //绘制平均适合度的图表
-            x = 0.0;
-            wingdi::SelectObject(surface, self.blue_pen as HGDIOBJ);
-            move_to_ex(surface, 0.0, self.cy_client as f64);
-
-            for i in 0..self.av_fitness.len() {
-                line_to(surface, x, self.cy_client as f64 - v_slice* self.av_fitness[i]);
-                x += h_slice as f64;
-            }
-            //恢复PEN
-            wingdi::SelectObject(surface, self.old_pen as HGDIOBJ);
+        //绘制图形
+        let mut h_slice = self.cx_client / (self.generations+1);
+        if h_slice < 1 {
+            h_slice = 1;
         }
+        let v_slice = self.cy_client as f64 / ((self.ga.best_fitness()+1.0)*2.0);
+
+        //绘制最佳适应分图
+        let mut x = 0.0;
+        let mut pb = PathBuilder::new();
+        pb.move_to(0.0, self.cy_client as f32);
+        for i in 0..self.best_fitness.len() {            
+            pb.line_to(x, (self.cy_client as f64 - v_slice* self.best_fitness[i]) as f32);
+            x += h_slice as f32;
+        }
+        let path = pb.finish();
+        //红色绘制
+        surface.stroke(
+            &path,
+            &self.red_pen,
+            &StrokeStyle::default(),
+            &DrawOptions::new(),
+        );
+        
+        //绘制平均适合度的图表
+        x = 0.0;
+        let mut pb = PathBuilder::new();
+        pb.move_to(0.0, self.cy_client as f32);
+
+        for i in 0..self.av_fitness.len() {
+            pb.line_to(x, (self.cy_client as f64 - v_slice* self.av_fitness[i]) as f32);
+            x += h_slice as f32;
+        }
+        let path = pb.finish();
+        //蓝色绘制
+        surface.stroke(
+            &path,
+            &self.blue_pen,
+            &StrokeStyle::default(),
+            &DrawOptions::new(),
+        );
     }
 
     //设置地雷的转换矩阵，并将世界变换应用于传递给此方法的顶点缓冲区中的每个顶点。
@@ -241,10 +249,8 @@ impl Controller{
                 //根据神经网络的输出更新扫雷机位置
                 if !self.sweepers[i].update(&self.mines) {
                     //神经网络处理出错
-                    unsafe {
-                        winuser::MessageBoxW(null_mut(), str_to_ws("NN输入数量错误！").as_ptr(), str_to_ws("错误").as_ptr(), MB_OK);
-                        return false;
-                    }
+                    msgbox::create("错误", "NN输入数量错误！", IconType::Error);
+                    return false;
                 }
                 //看是否找到了一个地雷
                 let grab_hit = self.sweepers[i].check_for_mine(&self.mines, MINE_SCALE);
@@ -268,7 +274,7 @@ impl Controller{
             //最好适应分和平均适应分用于在窗口中展示
             self.av_fitness.push(self.ga.average_fitness());
             self.best_fitness.push(self.ga.best_fitness());
-            println!("Generation: {} 最好: {:?} 平均: {:?}", self.generations, self.ga.best_fitness(), self.ga.average_fitness());
+            // println!("Generation: {} 最好: {:?} 平均: {:?}", self.generations, self.ga.best_fitness(), self.ga.average_fitness());
             //时代计数器+1
             self.generations += 1;
             //重置循环
@@ -292,67 +298,85 @@ impl Controller{
         true
     }
 
-    pub fn render(&mut self, surface: HDC) {
+    pub fn render(&mut self, surface: &mut DrawTarget, font:&Font) {
         if !self.render_enable { return; }
-        unsafe {
-            //绘制状态
-            let s = format!("代: {}", self.generations);
-            text_out(surface, 5, 0, &s);
+        //绘制状态
+        let s = format!("代: {}", self.generations);
+        // text_out(surface, 5, 0, &s);
+        surface.draw_text(
+            font,
+            12.,
+            &s,
+            Point::new(5., 20.),
+            &self.black_pen,
+            &DrawOptions::new(),
+        );
 
-            //如果以加速的速度运行，不呈现
-            if !self.fast_render {
-                self.old_pen = wingdi::SelectObject(surface, self.green_pen as HGDIOBJ) as HPEN;
-
-                //绘制地雷
-                for i in 0..self.num_mines {
-                    //抓取地雷形状的顶点
-                    let mut mine_vb = self.mine_vb.clone();
-                    Controller::world_transform(&mut mine_vb, &self.mines[i]);
-                    //画地雷
-                    move_to_ex(surface, mine_vb[0].x, mine_vb[0].y);
-                    for vert in 1..mine_vb.len() {
-                        line_to(surface, mine_vb[vert].x, mine_vb[vert].y);
-                    }
-                    line_to(surface, mine_vb[0].x, mine_vb[0].y);
+        //如果以加速的速度运行，不呈现
+        if !self.fast_render {
+            //绘制地雷
+            for i in 0..self.num_mines {
+                //抓取地雷形状的顶点
+                let mut mine_vb = self.mine_vb.clone();
+                Controller::world_transform(&mut mine_vb, &self.mines[i]);
+                //画地雷
+                let mut pb = PathBuilder::new();
+                pb.move_to(mine_vb[0].x, mine_vb[0].y);
+                for vert in 1..mine_vb.len() {
+                    pb.line_to(mine_vb[vert].x, mine_vb[vert].y);
                 }
-
-                //我们希望fittest显示为红色
-                wingdi::SelectObject(surface, self.red_pen as HGDIOBJ);
-                //render the sweepers
-                for i in 0..NUM_SWEEPERS {
-                    if i == NUM_ELITE {
-                        wingdi::SelectObject(surface, self.old_pen as HGDIOBJ);
-                    }
-
-                    let mut sweeper_vb = self.sweeper_vb.clone();
-                    self.sweepers[i].world_transform(&mut sweeper_vb);
-                    //画扫雷机的左轮
-                    move_to_ex(surface, sweeper_vb[0].x, sweeper_vb[0].y);
-                    for vert in 1..4{
-                        line_to(surface, sweeper_vb[vert].x, sweeper_vb[vert].y);
-                    }
-                    line_to(surface, sweeper_vb[0].x, sweeper_vb[0].y);
-                    //画扫雷机的右轮
-                    move_to_ex(surface, sweeper_vb[4].x, sweeper_vb[4].y);
-                    for vert in 5..8{
-                        line_to(surface, sweeper_vb[vert].x, sweeper_vb[vert].y);
-                    }
-                    line_to(surface, sweeper_vb[4].x, sweeper_vb[4].y);
-
-                    move_to_ex(surface, sweeper_vb[8].x, sweeper_vb[8].y);
-                    line_to(surface, sweeper_vb[9].x, sweeper_vb[9].y);
-
-                    move_to_ex(surface, sweeper_vb[10].x, sweeper_vb[10].y);
-                    for vert in 11..16{
-                        line_to(surface, sweeper_vb[vert].x, sweeper_vb[vert].y);
-                    }
-                }
-                //恢复old pen
-                wingdi::SelectObject(surface, self.old_pen as HGDIOBJ);
-            }//end if
-            else {
-                self.plot_stats(surface);
+                pb.line_to(mine_vb[0].x, mine_vb[0].y);
+                let path = pb.finish();
+                surface.stroke(
+                    &path,
+                    &self.green_pen,
+                    &StrokeStyle::default(),
+                    &DrawOptions::new(),
+                );
             }
+
+            //我们希望fittest显示为红色
+            let mut pen = &self.red_pen;
+            //render the sweepers
+            for i in 0..NUM_SWEEPERS {
+                if i == NUM_ELITE {
+                    pen = &self.black_pen;
+                }
+
+                let mut sweeper_vb = self.sweeper_vb.clone();
+                self.sweepers[i].world_transform(&mut sweeper_vb);
+                let mut pb = PathBuilder::new();
+                //画扫雷机的左轮
+                pb.move_to(sweeper_vb[0].x, sweeper_vb[0].y);
+                for vert in 1..4{
+                    pb.line_to(sweeper_vb[vert].x, sweeper_vb[vert].y);
+                }
+                pb.line_to(sweeper_vb[0].x, sweeper_vb[0].y);
+                //画扫雷机的右轮
+                pb.move_to(sweeper_vb[4].x, sweeper_vb[4].y);
+                for vert in 5..8{
+                    pb.line_to(sweeper_vb[vert].x, sweeper_vb[vert].y);
+                }
+                pb.line_to(sweeper_vb[4].x, sweeper_vb[4].y);
+
+                pb.move_to(sweeper_vb[8].x, sweeper_vb[8].y);
+                pb.line_to(sweeper_vb[9].x, sweeper_vb[9].y);
+
+                pb.move_to(sweeper_vb[10].x, sweeper_vb[10].y);
+                for vert in 11..16{
+                    pb.line_to(sweeper_vb[vert].x, sweeper_vb[vert].y);
+                }
+                let path = pb.finish();
+                surface.stroke(
+                    &path,
+                    &pen,
+                    &StrokeStyle::default(),
+                    &DrawOptions::new(),
+                );
+            }
+        }//end if
+        else {
+            self.plot_stats(surface, font);
         }
     }
     

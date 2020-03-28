@@ -91,14 +91,10 @@ impl Matrix {
 
     pub fn transform_points(&self, points: &mut Vec<PointF>){
         for point in points {
-            let temp_x =(self.matrix._11*point.x) + (self.matrix._21*point.y) + (self.matrix._31);
-		    let temp_y = (self.matrix._12*point.x) + (self.matrix._22*point.y) + (self.matrix._32);
-		    point.x = temp_x;
-            point.y = temp_y;
+            let temp_x =(self.matrix._11*point.x as f64) + (self.matrix._21*point.y as f64) + (self.matrix._31);
+		    let temp_y = (self.matrix._12*point.x as f64) + (self.matrix._22*point.y as f64) + (self.matrix._32);
+		    point.x = temp_x as f32;
+            point.y = temp_y as f32;
         }
     }
 }
-
-// impl Add for Matrix {
-    
-// }

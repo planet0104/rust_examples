@@ -27,8 +27,8 @@ impl Clone for Point {
 
 #[derive(Debug)]
 pub struct PointF{
-    pub x: f64,
-    pub y: f64
+    pub x: f32,
+    pub y: f32
 }
 
 impl PointF {
@@ -36,7 +36,7 @@ impl PointF {
         PointF{ x: 0.0, y: 0.0}
     }
 
-    pub fn from(x: f64, y: f64) -> PointF {
+    pub fn from(x: f32, y: f32) -> PointF {
         PointF{ x: x, y: y}
     }
 }

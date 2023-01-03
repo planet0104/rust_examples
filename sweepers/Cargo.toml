@@ -2,14 +2,14 @@
 name = "sweepers"
 version = "0.1.0"
 authors = ["JiaYe"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-rand = "0.7.3"
-minifb = "0.15.3"
-raqote = "0.7.14"
-font-kit = "0.5.0"
-msgbox = "0.4.0"
+rand = "0.8.5"
+minifb = "0.23"
+raqote = "0.8"
+font-kit = "*"
+msgbox = "0.7.0"
 
 # [target.'cfg(windows)'.dependencies]
 # winapi = { version = "0.3", features = ["winuser"] }

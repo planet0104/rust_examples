@@ -1,16 +1,16 @@
 // use winapi::shared::windef::{ HGDIOBJ, HPEN, HDC, COLORREF };
 // use winapi::um::wingdi::{ PS_SOLID };
 use crate::params::{ NUM_ELITE, NUM_TICKS, MINE_SCALE, WINDOW_WIDTH, WINDOW_HEIGHT, NUM_MINES, NUM_SWEEPERS, MUTATION_RATE, CROSSOVER_RATE };
+use font_kit::font::Font;
 use raqote::{
     DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source, StrokeStyle,
 };
-use font_kit::font::Font;
 use msgbox::IconType;
 //控制器
-use crate::gen_alg::{ Genome };
-use crate::mine_sweeper::{ MineSweeper };
-use crate::vector_2d::{Vector2D};
-use crate::gen_alg::{ GenAlg };
+use crate::gen_alg::Genome;
+use crate::mine_sweeper::MineSweeper;
+use crate::vector_2d::Vector2D;
+use crate::gen_alg::GenAlg;
 use crate::matrix::Matrix;
 use crate::utils::{ random_float, PointF };
 
@@ -249,7 +249,7 @@ impl <'a> Controller<'a>{
                 //根据神经网络的输出更新扫雷机位置
                 if !self.sweepers[i].update(&self.mines) {
                     //神经网络处理出错
-                    msgbox::create("错误", "NN输入数量错误！", IconType::Error);
+                    let _ = msgbox::create("错误", "NN输入数量错误！", IconType::Error);
                     return false;
                 }
                 //看是否找到了一个地雷

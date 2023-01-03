@@ -93,7 +93,7 @@ pub fn random_float() -> f64{ rand::random::<f64>() }
 pub fn random_int(low: i32, high: i32) -> i32{
     //返回[low, high)区间的数
     //println!("low={},high={}", low, high);
-    rand::thread_rng().gen_range(low, high+1)
+    rand::thread_rng().gen_range(low..high+1)
 }
 
 pub fn clamp(arg: &mut f64, min: f64, max: f64){
